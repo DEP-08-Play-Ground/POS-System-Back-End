@@ -4,7 +4,7 @@ import javax.servlet.annotation.*;
 import java.io.IOException;
 
 @MultipartConfig(location = "/tmp",maxFileSize = 1024*1024*5)
-@WebServlet(name = "ItemServlet", value = "/ItemServlet")
+@WebServlet(name = "ItemServlet", value = {"/items","/items/*"})
 public class ItemServlet extends HttpServlet {
 
     private void doSaveOrUpdate(HttpServletRequest req, HttpServletResponse res){
