@@ -14,14 +14,15 @@ import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.*;
 
-@WebServlet(name = "CorsFilter", urlPatterns = {"/customers/*"})
+@WebServlet(name = "CorsFilter", urlPatterns = {"/customers","/customers/*"})
+
 public class CustomerServlet extends HttpServlet {
 
     @Resource(name = "java:comp/env/jdbc/pool4Pos")
     public volatile DataSource pool;
 
     private void doSaveorUpdate(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        if (req.getPathInfo() != null && !req.getPathInfo().replaceAll("/", "").matches("C\\d{3}")) {
+        if (!req.getPathInfo().replaceAll("/","").equals("") && !req.getPathInfo().replaceAll("/", "").matches("C\\d{3}")) {
             res.sendError(HttpServletResponse.SC_NOT_FOUND, "page not found!");
             return;
         } else if (req.getContentType() == null || !req.getContentType().equals("application/json")) {
@@ -33,7 +34,6 @@ public class CustomerServlet extends HttpServlet {
         }
 
         try (Connection connection = pool.getConnection()) {
-
             Jsonb jsonb = JsonbBuilder.create();
             CustomerDTO dto = jsonb.fromJson(req.getReader(), CustomerDTO.class);
             String id = req.getPathInfo() == null ? null : req.getPathInfo().replaceAll("/", "");
@@ -48,41 +48,43 @@ public class CustomerServlet extends HttpServlet {
             } else if (!dto.getNic().matches("\\d{9}[Vv]")) {
                 throw new ValidationException("Invalid NIC");
             }
+
             String sql;
+
+            PreparedStatement rgst = connection.prepareStatement("SELECT * FROM customer WHERE id=?");
+            rgst.setString(1,dto.getId());
+            ResultSet rst = rgst.executeQuery();
+            boolean next = rst.next();
+
             if (req.getMethod().equals("POST")) {
-                PreparedStatement rgst = connection.prepareStatement("SELECT * FROM customer WHERE id=?");
-                rgst.setString(1,dto.getId());
-                ResultSet rst = rgst.executeQuery();
-                if (rst.next()){
+                if (next){
                     res.sendError(HttpServletResponse.SC_CONFLICT,"Already has a member with this Id");
                     return;
                 }
                 sql = "INSERT INTO customer (id, name, address, nic) VALUES (?,?,?,?)";
-            } else {
-                PreparedStatement rgst = connection.prepareStatement("SELECT * FROM customer WHERE id=?");
-                rgst.setString(1,dto.getId());
-                ResultSet rst = rgst.executeQuery();
-                if (!rst.next()) {
-                    res.sendError(HttpServletResponse.SC_NOT_FOUND, "Can not find the Customer");
-                    return;
-                }
 
-                sql = "UPDATE customer SET name=?,address=?,nic=? WHERE id=?";
+            } else {
+                if (!next) {
+                    sql = "INSERT INTO customer (id, name, address, nic) VALUES (?,?,?,?)";
+                }else {
+                    sql = "UPDATE customer SET name=?,address=?,nic=? WHERE id=?";
+                }
             }
+
             PreparedStatement stm = connection.prepareStatement(sql);
-            if (req.getMethod().equals("POST")) {
-                System.out.println("POST");
+
+            if (req.getMethod().equals("POST") || (req.getMethod().equals("PUT") && !next)) {
                 stm.setString(1, dto.getId());
                 stm.setString(2, dto.getName());
                 stm.setString(3, dto.getAddress());
                 stm.setString(4, dto.getNic());
             } else {
-                System.out.println("PUT");
                 stm.setString(1, dto.getName());
                 stm.setString(2, dto.getAddress());
                 stm.setString(3, dto.getNic());
                 stm.setString(4, dto.getId());
             }
+
             int i = stm.executeUpdate();
             if (i != 1) {
                 res.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
