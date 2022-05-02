@@ -1,12 +1,17 @@
 package lk.ijse.dep8.api.dto;
 
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbTransient;
+
 import java.util.Arrays;
+import java.util.Base64;
 
 public class itemDTO {
     private String itemCode;
     private String itemName;
     private String price;
     private String qty;
+    @JsonbTransient
     private byte[] preview;
 
     public itemDTO(String itemCode, String itemName, String price, String qty, byte[] preview) {
@@ -45,6 +50,10 @@ public class itemDTO {
 
     public String getPrice() {
         return price;
+    }
+    @JsonbProperty(value = "preview",nillable = true)
+    public String getPreviewAsDataURI(){
+        return (preview==null)? null:"data:image/*;base64," + Base64.getEncoder().encode(preview);
     }
 
     public void setPrice(String price) {
