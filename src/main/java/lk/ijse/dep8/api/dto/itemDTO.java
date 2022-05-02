@@ -2,22 +2,29 @@ package lk.ijse.dep8.api.dto;
 
 import java.util.Arrays;
 
-public class ItemDTO {
+public class itemDTO {
     private String itemCode;
     private String itemName;
     private String price;
-    private int quantity;
+    private String qty;
     private byte[] preview;
 
-    public ItemDTO(String itemCode, String itemName, String price, int quantity, byte[] preview) {
+    public itemDTO(String itemCode, String itemName, String price, String qty, byte[] preview) {
         this.itemCode = itemCode;
         this.itemName = itemName;
         this.price = price;
-        this.quantity = quantity;
+        this.qty = qty;
         this.preview = preview;
     }
 
-    public ItemDTO() {
+    public itemDTO(String itemCode, String itemName, String price, String qty) {
+        this.itemCode = itemCode;
+        this.itemName = itemName;
+        this.price = price;
+        this.qty = qty;
+    }
+
+    public itemDTO() {
     }
 
     public String getItemCode() {
@@ -44,21 +51,21 @@ public class ItemDTO {
         this.price = price;
     }
 
-    public int getQuantity() {
-        return quantity;
+    public String getQty() {
+        return qty;
     }
 
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
+    public void setQty(String qty) {
+        this.qty = qty;
     }
 
     @Override
     public String toString() {
-        return "ItemDTO{" +
+        return "itemDTO{" +
                 "itemCode='" + itemCode + '\'' +
                 ", itemName='" + itemName + '\'' +
                 ", price='" + price + '\'' +
-                ", quantity=" + quantity +
+                ", qty=" + qty +
                 ", preview=" + Arrays.toString(preview) +
                 '}';
     }
