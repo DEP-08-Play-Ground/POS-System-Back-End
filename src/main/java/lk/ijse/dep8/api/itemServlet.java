@@ -99,7 +99,7 @@ public class itemServlet extends HttpServlet {
                     PreparedStatement stm2 = con.prepareStatement("INSERT INTO item(itemCode, itemName, price, qty, preview) VALUES (?,?,?,?,?)");
                     stm2.setString(1, item.getItemCode());
                     stm2.setString(2, item.getItemName());
-                    stm2.setString(3, item.getPrice());
+                    stm2.setDouble(3, Double.parseDouble(item.getPrice()));
                     stm2.setString(4, item.getQty());
                     stm2.setBlob(5, item.getPreview()==null? null:new SerialBlob(item.getPreview()));
                     int i = stm2.executeUpdate();
