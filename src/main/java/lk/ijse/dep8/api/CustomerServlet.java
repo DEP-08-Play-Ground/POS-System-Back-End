@@ -13,6 +13,7 @@ import javax.servlet.annotation.*;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.*;
+import java.util.ArrayList;
 
 @WebServlet(name = "CorsFilter", urlPatterns = {"/customers","/customers/*"})
 
@@ -111,6 +112,52 @@ public class CustomerServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if (request.getPathInfo()!=null && !request.getPathInfo().equals("/")){
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        String query = request.getParameter("q");
+        query = "%"  + ((query == null) ? "": query) + "%";
+
+        boolean pagination = request.getParameter("page")!=null && request.getParameter("size")!=null;
+        String sql;
+        if (pagination){
+            sql="SELECT * FROM customer WHERE id LIKE ? OR customer.name LIKE ? OR customer.address LIKE ? OR customer.nic LIKE ? LIMIT ? OFFSET ?";
+        }else {
+            sql="SELECT * FROM customer WHERE id LIKE ? OR customer.name LIKE ? OR customer.address LIKE ? OR customer.nic LIKE ?";
+        }
+
+        try (Connection connection = pool.getConnection()) {
+            PreparedStatement stm = connection.prepareStatement(sql);
+            stm.setString(1,query);
+            stm.setString(2,query);
+            stm.setString(3,query);
+            stm.setString(4,query);
+            if (pagination){
+                int page=Integer.parseInt(request.getParameter("page"));
+                int size=Integer.parseInt(request.getParameter("size"));
+
+                stm.setInt(5,size);
+                stm.setInt(6,(page -1)*size);
+            }
+
+            ResultSet rst = stm.executeQuery();
+
+            Jsonb jsonb = JsonbBuilder.create();
+            ArrayList<CustomerDTO> customerDTOS = new ArrayList<>();
+            while (rst.next()) {
+                customerDTOS.add(new CustomerDTO(rst.getString("id"), rst.getString("name")
+                        , rst.getString("address"), rst.getString("nic")));
+            }
+            response.setContentType("application/json");
+            jsonb.toJson(customerDTOS, response.getWriter());
+            customerDTOS.clear();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("Failed to fetch data");
+        }
 
     }
 
